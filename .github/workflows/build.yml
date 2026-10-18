@@ -1,0 +1,34 @@
+name: Build APK
+on:
+  workflow_dispatch:
+  push:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: unzip loftly.zip
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Prepare Android files
+        working-directory: loftly
+        run: |
+          cp -r lib /tmp/lib_b
+          cp pubspec.yaml /tmp/pubspec_b.yaml
+          flutter create . --platforms=android --org com.example --project-name loftly
+          rm -rf lib test
+          cp -r /tmp/lib_b lib
+          cp /tmp/pubspec_b.yaml pubspec.yaml
+      - working-directory: loftly
+        run: flutter pub get
+      - working-directory: loftly
+        run: flutter build apk --debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: loftly-apk
+          path: loftly/build/app/outputs/flutter-apk/app-debug.apk
